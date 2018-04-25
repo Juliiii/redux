@@ -9,6 +9,16 @@
  * (...args) => f(g(h(...args))).
  */
 
+
+/**
+ * 这个代码简直是精髓。
+ * 这个代码的作用是将一串函数，让它们从右往左执行
+ * 比如说，a,b,c三个函数，输入到下面的代码中，会得到 (...args) => a(b(c(...args)));
+ * 
+ * @export
+ * @param {any} funcs 
+ * @returns 
+ */
 export default function compose(...funcs) {
   if (funcs.length === 0) {
     return arg => arg

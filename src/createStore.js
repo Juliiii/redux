@@ -28,6 +28,17 @@ import isPlainObject from './utils/isPlainObject'
  * @returns {Store} A Redux store that lets you read the state, dispatch actions
  * and subscribe to changes.
  */
+
+
+/**
+ * 这部分代码逻辑其实挺简单的.所以大家可以自己看看.
+ * 
+ * @export
+ * @param {any} reducer 
+ * @param {any} preloadedState 
+ * @param {any} enhancer 
+ * @returns 
+ */
 export default function createStore(reducer, preloadedState, enhancer) {
   if (typeof preloadedState === 'function' && typeof enhancer === 'undefined') {
     enhancer = preloadedState
@@ -163,6 +174,7 @@ export default function createStore(reducer, preloadedState, enhancer) {
    * return something else (for example, a Promise you can await).
    */
   function dispatch(action) {
+    console.log('dispatch');
     if (!isPlainObject(action)) {
       throw new Error(
         'Actions must be plain objects. ' +

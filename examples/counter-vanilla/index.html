@@ -15,6 +15,30 @@
       </p>
     </div>
     <script>
+      const logger = store => next => action => {
+        console.log('dispatching', action)
+        let result = next(action)
+        console.log('logger')
+        console.log('next state', store.getState())
+        return result
+      }
+
+      const crashReporter = store => next => action => {
+        try {
+          const result = next(action)
+          console.log('crash');
+          return result;
+        } catch (err) {
+          console.error('Caught an exception!', err)
+          // Raven.captureException(err, {
+          //   extra: {
+          //     action,
+          //     state: store.getState()
+          //   }
+          // })
+          // throw err
+        }
+      }
       function counter(state, action) {
         if (typeof state === 'undefined') {
           return 0
@@ -30,7 +54,9 @@
         }
       }
 
-      var store = Redux.createStore(counter)
+
+
+      var store = Redux.createStore(counter, Redux.applyMiddleware(logger, crashReporter))
       var valueEl = document.getElementById('value')
 
       function render() {

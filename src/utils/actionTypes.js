@@ -4,6 +4,8 @@
  * If the current state is undefined, you must return the initial state.
  * Do not reference these action types directly in your code.
  */
+
+ // 下面的actionTypes是redux内部的一些types, 了解下就行, 开发时遵守规定别乱用即可
 const ActionTypes = {
   INIT:
     '@@redux/INIT' +
