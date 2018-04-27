@@ -75,6 +75,8 @@ export default function createStore(reducer, preloadedState, enhancer) {
    * @returns {any} The current state tree of your application.
    */
   function getState() {
+    // 如果正在dispatch的话, 说明新的state正在计算中，现在的state是旧的，为了确保用户能获得新的
+    // state，所以要加一个判断，如果是正在dispatch的话，就报错，反之，返回现在的state
     if (isDispatching) {
       throw new Error(
         'You may not call store.getState() while the reducer is executing. ' +
@@ -110,10 +112,13 @@ export default function createStore(reducer, preloadedState, enhancer) {
    * @returns {Function} A function to remove this change listener.
    */
   function subscribe(listener) {
+    // listener是state变化时的回调，必须是个函数
     if (typeof listener !== 'function') {
       throw new Error('Expected the listener to be a function.')
     }
 
+    // 如果是正在dispatch中，就报错。因为要确保state变化时，监听器的队列也必须是最新的
+    // 所以监听器的注册要在计算新的state之前。
     if (isDispatching) {
       throw new Error(
         'You may not call store.subscribe() while the reducer is executing. ' +
@@ -123,12 +128,18 @@ export default function createStore(reducer, preloadedState, enhancer) {
       )
     }
 
+    // 标志是否注册，额，其实个人感觉没啥必要。不过仔细想想，应该是防止用户多次调用取消监听的函数。
     let isSubscribed = true
 
+    // 其实这个函数就是判断当前的监听器队列和未来的是否一样，如果不一样那就将当前的赋值给未来的。
+    // 额，还是不是很理解为什么得这么实现，可能是为了达到数据不可变的效果，避免压进新的回调时
+    // 导致当前的监听器队列也有这个回调
     ensureCanMutateNextListeners()
     nextListeners.push(listener)
 
+    // 注册监听器后会返回一个取消监听的函数
     return function unsubscribe() {
+      // 如果是已经调用该函数取消监听了，就返回
       if (!isSubscribed) {
         return
       }
@@ -140,8 +151,10 @@ export default function createStore(reducer, preloadedState, enhancer) {
         )
       }
 
+      // 标志已经取消了
       isSubscribed = false
 
+      // 删除
       ensureCanMutateNextListeners()
       const index = nextListeners.indexOf(listener)
       nextListeners.splice(index, 1)
@@ -174,7 +187,8 @@ export default function createStore(reducer, preloadedState, enhancer) {
    * return something else (for example, a Promise you can await).
    */
   function dispatch(action) {
-    console.log('dispatch');
+
+    // action要求是一个简单对象，而一个简单对象就是指通过对象字面量和new Object()创建的对象，如果不是就报错。 
     if (!isPlainObject(action)) {
       throw new Error(
         'Actions must be plain objects. ' +
@@ -182,6 +196,7 @@ export default function createStore(reducer, preloadedState, enhancer) {
       )
     }
 
+    // reducer内部是根据action的type属性来switch-case，决定用什么逻辑来计算state的，所以type属性是必须的。
     if (typeof action.type === 'undefined') {
       throw new Error(
         'Actions may not have an undefined "type" property. ' +
@@ -189,17 +204,20 @@ export default function createStore(reducer, preloadedState, enhancer) {
       )
     }
 
+    // 如果是已经在dispatch的，就报错，避免不一致
     if (isDispatching) {
       throw new Error('Reducers may not dispatch actions.')
     }
 
+    // 这里就是计算新的state，并赋值给currentState
     try {
       isDispatching = true
       currentState = currentReducer(currentState, action)
     } finally {
       isDispatching = false
     }
-
+    // state更新了后，就如之前我们所说的subscribe，将注册的回调都触发一遍。大家要注意这里，是都触发一遍哦
+    // 这个点了解，react-redux的一些原理会比较容易理解。
     const listeners = (currentListeners = nextListeners)
     for (let i = 0; i < listeners.length; i++) {
       const listener = listeners[i]
